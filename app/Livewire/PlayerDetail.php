@@ -4,27 +4,57 @@ namespace App\Livewire;
 
 use App\Models\player;
 use Livewire\Component;
+use Livewire\Attributes\Validate;
+use Livewire\WithFileUploads;
 
 class PlayerDetail extends Component
 {
-    
+    use WithFileUploads;
+
     public player $player;
 
-    public function mount(Player $player)
+    public bool $editPlayer = false;
+
+    #[Validate('string', 'required', 'max:255')]
+    public $newName = '';
+
+    #[Validate('string', 'required', 'max:255')]
+    public $newPosition = '';
+
+    #[Validate('nullable')]
+    public $newImage  = null;
+
+    public function openEditModal()
     {
-        $this->player = $player;
+        $this->newName = $this->player->name;
+        $this->newPosition = $this->player->position;      
+        $this->editPlayer = true;
     }
 
     public function updatePlayer()
     {
-        $this->validate([
-            'player.name' => 'required|string|max:255',
-            'player.age' => 'required|integer|min:0',
-            'player.position' => 'required|string|max:50',
+        $this->validate();
+        $imagePath = $this->newImage ? $this->newImage->store('images', 'public') : $this->player->image;
+
+        $this->player->update([
+            'name' => $this->newName,
+            'position' => $this->newPosition,
+            'image' => $imagePath,
         ]);
 
-        $this->player->save();
-        return redirect()->route('main');
+        $this->reset(['newName', 'newPosition', 'newImage']);
+        $this->closeEditModal();
+        
+    }
+
+    public function closeEditModal()
+    {
+        $this->editPlayer = false;
+    }
+
+    public function mount(Player $player)
+    {
+        $this->player = $player;
     }
 
     public function deletePlayer()
